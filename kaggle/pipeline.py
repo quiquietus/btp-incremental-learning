@@ -52,6 +52,9 @@ CLASSES15 = ['baseball_pitch', 'baseball_swing', 'bench_press', 'bowling', 'clea
              'jump_rope', 'jumping_jacks', 'pull_ups', 'push_ups', 'sit_ups', 'squats', 'strumming_guitar',
              'tennis_forehand', 'tennis_serve']
 CLASSES14 = [c for c in CLASSES15 if c != 'strumming_guitar']
+# Penn Action's .mat files use short names for six actions
+PENN_NAMES = {'bowl': 'bowling', 'pullup': 'pull_ups', 'pushup': 'push_ups', 'situp': 'sit_ups',
+              'squat': 'squats', 'strum_guitar': 'strumming_guitar'}
 
 WORK = os.environ.get('BTP_WORK', '/kaggle/working')
 CACHE = os.path.join(WORK, 'cache')
@@ -111,7 +114,8 @@ def stage_meta():
         m = sio.loadmat(f)
         vid = os.path.splitext(os.path.basename(f))[0]
         dims = np.asarray(m['dimensions']).ravel()
-        meta.append({'vid': vid, 'action': str(np.asarray(m['action']).ravel()[0]),
+        act = str(np.asarray(m['action']).ravel()[0]).strip()
+        meta.append({'vid': vid, 'action': PENN_NAMES.get(act, act),
                      'train': int(np.asarray(m['train']).ravel()[0]) == 1,
                      'nframes': int(np.asarray(m['nframes']).ravel()[0]),
                      'H': int(dims[0]), 'W': int(dims[1]),
@@ -126,7 +130,13 @@ def stage_meta():
 
 # stage: data
 def load_meta():
-    return load_json(os.path.join(CACHE, 'meta.json'))
+    meta = load_json(os.path.join(CACHE, 'meta.json'))
+    for m in meta:
+        m['action'] = PENN_NAMES.get(m['action'], m['action'])
+    missing = sorted(set(CLASSES15) - {m['action'] for m in meta})
+    if missing:
+        raise RuntimeError(f'no videos for {missing}; action names in the labels: {sorted({m["action"] for m in meta})}')
+    return meta
 
 
 def pck(meta):
@@ -484,7 +494,7 @@ def stage_central():
         n_tr = len(s['ytr']); sub = np.random.default_rng(0).choice(n_tr, size=min(n_tr, 20000), replace=False)
         rf = RandomForestClassifier(n_estimators=300, n_jobs=-1, random_state=0, class_weight='balanced')
         rf.fit(window_stats(s['Xtr'][sub]), s['ytr'][sub])
-        Pm = rf.predict_proba(window_stats(s['Xte']))
+        Pm = np.zeros((len(s['yte']), K)); Pm[:, rf.classes_] = rf.predict_proba(window_stats(s['Xte']))
         results[f'random_forest_{ncls}cls'] = full_metrics(s['yte'], Pm, K, s['gte'], classes)
     # McNemar Bi-LSTM vs Bi-RNN (14 classes, seed 0, windows)
     from scipy.stats import binomtest
