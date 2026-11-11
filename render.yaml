@@ -1,0 +1,62 @@
+# Aggregator + three client nodes on Render's free plan.
+# SERVER_URL is unknown until the server's first deploy; set it in btp-shared, then redeploy the nodes.
+envVarGroups:
+  - name: btp-shared
+    envVars:
+      - key: JWT_SECRET          # shared by all four services
+        generateValue: true
+      - key: SERVER_URL          # set after the first deploy
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+services:
+  - type: web
+    name: btp-fl-server
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: btp-shared
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
+
+  - type: web
+    name: btp-fl-node-1
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn node.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: btp-shared
+      - key: NODE_ID
+        value: "1"
+
+  - type: web
+    name: btp-fl-node-2
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn node.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: btp-shared
+      - key: NODE_ID
+        value: "2"
+
+  - type: web
+    name: btp-fl-node-3
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn node.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: btp-shared
+      - key: NODE_ID
+        value: "3"
