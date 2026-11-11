@@ -44,7 +44,7 @@ import os, subprocess, sys
 os.makedirs('/kaggle/working/btp/btpcore', exist_ok=True)
 os.makedirs('/kaggle/working/cache/lm', exist_ok=True)
 # MediaPipe goes into a separate folder so its NumPy/OpenCV versions cannot break PyTorch or scikit-learn here.
-!pip install -q --target /kaggle/tmp/mp mediapipe
+!pip install -q --no-warn-conflicts --target /kaggle/tmp/mp mediapipe
 # MediaPipe needs these system graphics libraries even on CPU.
 !apt-get install -y -q libegl1 libgles2 libgl1 > /dev/null 2>&1 || (apt-get update -q > /dev/null 2>&1 && apt-get install -y -q libegl1 libgles2 libgl1 > /dev/null 2>&1)
 !wget -q -O /kaggle/working/cache/pose_landmarker_full.task https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task
