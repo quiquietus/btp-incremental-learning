@@ -370,6 +370,7 @@ async def ws_stream(ws: WebSocket):
     probs = deque(maxlen=5)
     since = 0
     every = 8
+    min_frames = 16                             # 0.5 s; shorter buffers are padded like short training clips
     try:
         while True:
             msg = json.loads(await ws.receive_text())
@@ -385,9 +386,9 @@ async def ws_stream(ws: WebSocket):
                     if msg.get('report_missing'):
                         await ws.send_text(json.dumps({'type': 'nopose'}))
                     continue
-                if since >= every and len(sf.buf) >= T:
+                if since >= every and len(sf.buf) >= min_frames:
                     since = 0
-                    win = ((sf.window() - MU) / SD).astype(np.float32)
+                    win = ((sf.window(min_frames) - MU) / SD).astype(np.float32)
                     t0 = time.time()
                     with LOCK:
                         p = NPM.predict_proba(PERSONAL, win)[0]
@@ -404,10 +405,12 @@ async def ws_stream(ws: WebSocket):
                         'ms': (time.time() - t0) * 1000, 'personal_version': VERSIONS['personal'],
                         'global_version': VERSIONS['global'], 'angles': angles,
                         'frames_buffered': len(sf.buf)}))
-                elif len(sf.buf) < T:
-                    await ws.send_text(json.dumps({'type': 'warming', 'frames_buffered': len(sf.buf), 'need': T}))
+                elif len(sf.buf) < min_frames:
+                    await ws.send_text(json.dumps({'type': 'warming', 'frames_buffered': len(sf.buf), 'need': min_frames}))
             elif typ == 'reset':
                 sf.reset(); session.clear(); probs.clear()
+            elif typ == 'loop':                 # a looping file restarted: new clip, keep the smoothed label
+                sf.reset(); session.clear()
             elif typ == 'label':
                 if user['role'] != 'operator':
                     await ws.send_text(json.dumps({'type': 'error', 'error': 'Only the node operator can label clips'})); continue

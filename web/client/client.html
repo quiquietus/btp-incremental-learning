@@ -191,7 +191,7 @@ async function start(kind, src) {
     }
     await video.play();
     $('#vmsg').hidden = true; $('#stop').disabled = false;
-    streamWS.send({ type: 'reset' });
+    streamWS.send({ type: 'reset' }); hasPred = false;
     running = true; lastVideoTime = -1; loop();
   } catch (e) { $('#vmsg').hidden = false; $('#vmsg').textContent = 'Could not start: ' + e.message; }
 }
@@ -205,7 +205,7 @@ $('#file').onchange = e => { const f = e.target.files[0]; if (f) start('file', U
 $('#stop').onclick = () => { stop(); $('#vmsg').hidden = false; $('#vmsg').textContent = 'Stopped.'; };
 $('#pmodel').onchange = () => { if (running) start(mode, video.src); };
 // a looping file restarts from 0: start a fresh clip on the node so windows do not jump in time
-video.addEventListener('seeked', () => { if (mode === 'file' && video.currentTime < 0.2) streamWS.send({ type: 'reset' }); });
+video.addEventListener('seeked', () => { if (mode === 'file' && video.currentTime < 0.2) streamWS.send({ type: 'loop' }); });
 
 // stream to the node
 const streamWS = (() => {
@@ -217,12 +217,14 @@ function sendFrame(t, lm, ar) {
   streamWS.send(m);
 }
 const TL = [];
+let hasPred = false;     // keep the last label on screen while a looping clip refills
 function onStream(m) {
-  if (m.type === 'warming') { $('#pred').textContent = '…'; $('#pred-sub').textContent = `Collecting frames: ${m.frames_buffered} of ${m.need} (a window is 1.6 s)`; }
+  if (m.type === 'warming') { if (!hasPred) $('#pred').textContent = '…'; $('#pred-sub').textContent = `Collecting frames: ${m.frames_buffered} of ${m.need} (shoulders, hips and knees must be visible)`; }
   if (m.type === 'pred') {
+    hasPred = true;
     $('#pred').textContent = nice(m.label);
     $('#pred').style.color = classColor(CLASSES.indexOf(m.label));
-    $('#pred-sub').innerHTML = `${pct(m.p)} confident, personal model v${m.personal_version}. Global model v${m.global_version} says <b>${esc(nice(m.global_label))}</b> (${pct(m.global_p, 0)}). Inference ${fmt(m.ms, 1)} ms on the node.`;
+    $('#pred-sub').innerHTML = `${pct(m.p)} confident, personal model v${m.personal_version}. Global model v${m.global_version} says <b>${esc(nice(m.global_label))}</b> (${pct(m.global_p, 0)}). Inference ${fmt(m.ms, 1)} ms on the node.${m.frames_buffered < 48 ? ` Short window: ${m.frames_buffered} of 48 frames, padded.` : ''}`;
     $('#top3').innerHTML = m.top3.map(([c, p]) => `<div><span>${esc(nice(c))}</span><div class="bar"><i style="width:${100 * p}%;background:${classColor(CLASSES.indexOf(c))}"></i></div><span class="num">${pct(p, 0)}</span></div>`).join('');
     $('#angles').innerHTML = Object.entries(m.angles).map(([k, v]) => `<div><b>${esc(nice(k))}</b>${fmt(v, 0)}°</div>`).join('');
     TL.push(m.label); if (TL.length > 60) TL.shift();

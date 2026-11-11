@@ -204,9 +204,9 @@ class StreamFeaturizer:
     def push(self, t, lm, aspect=1.0):
         """t in seconds, lm (33, 4) or None. Returns number of new frames."""
         if lm is None or not np.all(np.asarray(lm)[GATE, 3] >= VIS_THRESHOLD):
+            # skip the frame; the next good one is interpolated across the gap,
+            # and a gap over 1 s starts a new clip (checked below)
             self.missing += 1
-            if self.missing > MAX_GAP:
-                self.reset()
             return 0
         self.missing = 0
         lm = np.asarray(lm, dtype=np.float32)
@@ -229,7 +229,13 @@ class StreamFeaturizer:
         self.buf = self.buf[-self.T:]
         return len(new)
 
-    def window(self):
-        if len(self.buf) < self.T:
+    def window(self, min_frames=None):
+        """Last T frames as (1, T, F). With min_frames, a shorter buffer is padded
+        by repeating its last frame, the same rule used for short training clips."""
+        n = len(self.buf)
+        if n < (min_frames or self.T) or n == 0:
             return None
-        return np.stack(self.buf)[None]
+        x = np.stack(self.buf)
+        if n < self.T:
+            x = np.concatenate([x, np.repeat(x[-1:], self.T - n, 0)], 0)
+        return x[None]
