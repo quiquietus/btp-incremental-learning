@@ -74,7 +74,10 @@
    10,
    2,
    2
-  ]
+  ],
+  "expB_passes": 10,
+  "expB_lr": 0.0005,
+  "expB_new_head_init": "mean of seen-class output rows"
  },
  "federated": {
   "clients": 3,
@@ -90,6 +93,7 @@
   "eta_grid": [
    0.001,
    0.01,
+   0.03,
    0.1
   ],
   "beta1": 0.9,
@@ -99,7 +103,7 @@
   "server_val_windows": 400,
   "shapley": "exact (2^3 subsets)",
   "partition_seed": 100,
-  "eta_selected": 0.1
+  "eta_selected": 0.03
  },
  "live": {
   "predict_every_frames": 8,
@@ -113,11 +117,10 @@
   "gpu": "Tesla T4"
  },
  "stage_minutes": {
-  "meta": 0.1,
+  "meta": 1.7,
   "data": 0.4,
-  "central": 21.7,
+  "central": 21.4,
   "cl": 8.3,
-  "fl": 12.7,
-  "export": 0.7
+  "fl": 14.6
  }
 }

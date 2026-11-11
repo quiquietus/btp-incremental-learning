@@ -19,9 +19,9 @@ McNemar (Bi-LSTM vs Bi-RNN, 14 classes, seed 0, test windows): b = 318, c = 167,
 
 | Model | Parameters | Size (MB, float32) | PyTorch CPU ms/window | NumPy runtime ms/window |
 |---|---|---|---|---|
-| bilstm_attn | 174,158 | 0.70 | 2.42 | 12.40 |
-| birnn_attn | 56,654 | 0.23 | 3.16 | nan |
-| bilstm_paper9d | 155,214 | 0.62 | 2.28 | nan |
+| bilstm_attn | 174,158 | 0.70 | 2.32 | 12.71 |
+| birnn_attn | 56,654 | 0.23 | 2.97 | nan |
+| bilstm_paper9d | 155,214 | 0.62 | 2.23 | nan |
 
 ## Per-class results (Bi-LSTM, 14 classes, seed 0)
 
@@ -56,37 +56,39 @@ McNemar (Bi-LSTM vs Bi-RNN, 14 classes, seed 0, test windows): b = 318, c = 167,
 
 | Variant | Final average accuracy | Forgetting score | BWT | FWT | Intransigence (mean) |
 |---|---|---|---|---|---|
-| no_update | 0.078 | 0.842 | -0.842 | +0.000 | +0.225 |
-| naive | 0.245 | 0.842 | -0.842 | +0.000 | -0.024 |
-| replay | 0.180 | 0.842 | -0.842 | +0.000 | +0.073 |
-| ewc | 0.245 | 0.842 | -0.842 | +0.000 | -0.024 |
-| replay_ewc | 0.238 | 0.842 | -0.842 | +0.000 | -0.015 |
+| no_update | 0.300 | 0.000 | +0.000 | +0.000 | +0.734 |
+| naive | 0.277 | 0.842 | -0.842 | +0.000 | -0.073 |
+| replay | 0.513 | 0.447 | -0.447 | +0.000 | -0.031 |
+| ewc | 0.280 | 0.842 | -0.842 | +0.000 | -0.078 |
+| replay_ewc | 0.514 | 0.478 | -0.478 | +0.000 | -0.064 |
 
 ## Federated learning
 
-| Method | Test macro-F1 (global, final round) | Mean personal F1 on own client test | Worst client F1 | Rounds to 90% of centralised |
-|---|---|---|---|---|
-| FedProx + FedAdam + Ditto (eta 0.1) | 0.690 | 0.552 | 0.414 | 9 |
-| FedAvg | 0.749 | 0.533 | 0.398 | 12 |
-| Local-only (mean of clients) | 0.518 | 0.472 | 0.343 | — |
-| Centralised (upper bound) | 0.811 | — | — | — |
+| Method | Test macro-F1 (global, final round) | Mean of last 5 rounds | Mean personal F1 on own client test | Worst client F1 | Rounds to 90% of centralised |
+|---|---|---|---|---|---|
+| FedProx + FedAdam + Ditto (eta 0.03) | 0.776 | 0.752 ± 0.017 | 0.581 | 0.435 | 18 |
+| FedAvg | 0.744 | 0.754 ± 0.009 | 0.577 | 0.380 | 11 |
+| Local-only (mean of clients) | 0.518 | — | 0.472 | 0.343 | — |
+| Centralised (upper bound) | 0.811 | — | — | — | — |
 
 Bytes per round (3 clients, up and down): 4.16 MB
 
 
 ### Noisy-client sanity check (client 3 sends noise)
 
+Share and alignment measure influence on the aggregate, so a large random update scores high on both; Shapley measures usefulness on validation data.
+
 | Round | Client | Share | Alignment | Shapley |
 |---|---|---|---|---|
-| 1 | 1 | +0.030 | +0.177 | +0.0109 |
-| 1 | 2 | +0.267 | +0.519 | -0.0401 |
-| 1 | 3 | +0.703 | +0.838 | +0.0011 |
-| 2 | 1 | +0.022 | +0.145 | +0.0172 |
-| 2 | 2 | +0.224 | +0.473 | -0.0319 |
-| 2 | 3 | +0.754 | +0.868 | +0.0102 |
-| 3 | 1 | +0.019 | +0.140 | +0.0167 |
-| 3 | 2 | +0.190 | +0.438 | -0.0148 |
-| 3 | 3 | +0.791 | +0.889 | +0.0065 |
+| 1 | 1 | +0.025 | +0.161 | -0.0102 |
+| 1 | 2 | +0.295 | +0.545 | -0.0211 |
+| 1 | 3 | +0.679 | +0.825 | -0.0139 |
+| 2 | 1 | +0.025 | +0.152 | +0.0098 |
+| 2 | 2 | +0.206 | +0.452 | +0.0014 |
+| 2 | 3 | +0.769 | +0.876 | -0.0083 |
+| 3 | 1 | +0.019 | +0.135 | +0.0092 |
+| 3 | 2 | +0.129 | +0.357 | -0.0012 |
+| 3 | 3 | +0.852 | +0.923 | +0.0044 |
 
 ## Comparison with published Penn Action results (15 classes, video-level accuracy %)
 
