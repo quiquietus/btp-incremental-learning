@@ -1,0 +1,7 @@
+# Runtime for the server and the client nodes (no PyTorch: the model runs in NumPy, ~120 MB RAM per service)
+numpy>=1.26,<3
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27
+pyjwt>=2.8
+pydantic>=2.6
