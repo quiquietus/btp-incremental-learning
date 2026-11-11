@@ -1,0 +1,123 @@
+{
+ "seed_list": [
+  0,
+  1,
+  2
+ ],
+ "data": {
+  "fps": 30.0,
+  "T": 48,
+  "stride": 4,
+  "vis_threshold": 0.5,
+  "max_gap": 5,
+  "min_segment": 16,
+  "val_share": 0.15,
+  "aug_copies": 4,
+  "augmentation": {
+   "mirror_p": 0.5,
+   "rotation_deg": 10,
+   "speed": [
+    0.8,
+    1.2
+   ],
+   "frame_drop": 0.05,
+   "note": "scale augmentation is omitted because torso-length normalisation removes scale"
+  },
+  "normalisation": "mid-hip origin, torso-length scale, then z-score with training statistics",
+  "short_clip_padding": "repeat last frame up to T"
+ },
+ "pose": {
+  "model": "pose_landmarker_full.task",
+  "mode": "VIDEO",
+  "num_poses": 1,
+  "min_detection_conf": 0.5,
+  "min_presence_conf": 0.5,
+  "min_tracking_conf": 0.5
+ },
+ "model": {
+  "H": 64,
+  "A": 64,
+  "D": 64,
+  "dropout": 0.3,
+  "layers": 2
+ },
+ "train": {
+  "optimizer": "AdamW",
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "warmup_epochs": 5,
+  "min_lr": 1e-06,
+  "max_epochs": 80,
+  "patience": 12,
+  "batch": 64,
+  "label_smoothing": 0.05,
+  "grad_clip": 1.0,
+  "sampler": "class-balanced",
+  "early_stop_metric": "validation window macro-F1"
+ },
+ "incremental": {
+  "buffer": 16,
+  "lr": 0.0001,
+  "optimizer": "Adam",
+  "replay_ratio": 0.2,
+  "reservoir": 2000,
+  "lambda_ewc": 1000.0,
+  "lambda_ewc_sensitivity": [
+   100.0,
+   1000.0,
+   10000.0
+  ],
+  "fisher_samples": 500,
+  "passes_per_chunk": 3,
+  "chunks_expA": 4,
+  "class_tasks_expB": [
+   10,
+   2,
+   2
+  ]
+ },
+ "federated": {
+  "clients": 3,
+  "rounds": 30,
+  "eta_search_rounds": 10,
+  "local_epochs": 2,
+  "local_lr": 0.001,
+  "local_batch": 64,
+  "participation": "all",
+  "dirichlet_alpha": 0.5,
+  "client_test_share": 0.2,
+  "mu": 0.01,
+  "eta_grid": [
+   0.001,
+   0.01,
+   0.1
+  ],
+  "beta1": 0.9,
+  "beta2": 0.99,
+  "tau": 0.001,
+  "ditto_lambda": 0.1,
+  "server_val_windows": 400,
+  "shapley": "exact (2^3 subsets)",
+  "partition_seed": 100,
+  "eta_selected": 0.1
+ },
+ "live": {
+  "predict_every_frames": 8,
+  "smoothing_predictions": 5
+ },
+ "environment": {
+  "python": "3.13.16",
+  "torch": "2.11.0+cu130",
+  "numpy": "2.1.3",
+  "sklearn": "1.6.1",
+  "gpu": "Tesla T4"
+ },
+ "stage_minutes": {
+  "meta": 0.1,
+  "data": 0.4,
+  "central": 21.7,
+  "cl": 8.3,
+  "fl": 12.7,
+  "export": 0.7
+ }
+}

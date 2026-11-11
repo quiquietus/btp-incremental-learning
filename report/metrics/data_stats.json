@@ -1,0 +1,94 @@
+{
+ "videos": 1761,
+ "by_split": {
+  "train": 827,
+  "val": 146,
+  "test": 788
+ },
+ "client_sizes": {
+  "1": {
+   "train": 183,
+   "test": 46
+  },
+  "2": {
+   "train": 274,
+   "test": 68
+  },
+  "3": {
+   "train": 194,
+   "test": 48
+  }
+ },
+ "client_class_counts": {
+  "1": {
+   "baseball_pitch": 9,
+   "baseball_swing": 29,
+   "bench_press": 0,
+   "bowling": 78,
+   "clean_and_jerk": 1,
+   "golf_swing": 36,
+   "jump_rope": 6,
+   "jumping_jacks": 2,
+   "pull_ups": 51,
+   "push_ups": 0,
+   "sit_ups": 14,
+   "squats": 1,
+   "tennis_forehand": 0,
+   "tennis_serve": 2
+  },
+  "2": {
+   "baseball_pitch": 49,
+   "baseball_swing": 56,
+   "bench_press": 0,
+   "bowling": 0,
+   "clean_and_jerk": 26,
+   "golf_swing": 21,
+   "jump_rope": 7,
+   "jumping_jacks": 27,
+   "pull_ups": 8,
+   "push_ups": 6,
+   "sit_ups": 5,
+   "squats": 66,
+   "tennis_forehand": 66,
+   "tennis_serve": 5
+  },
+  "3": {
+   "baseball_pitch": 30,
+   "baseball_swing": 3,
+   "bench_press": 38,
+   "bowling": 2,
+   "clean_and_jerk": 7,
+   "golf_swing": 15,
+   "jump_rope": 16,
+   "jumping_jacks": 17,
+   "pull_ups": 10,
+   "push_ups": 4,
+   "sit_ups": 8,
+   "squats": 1,
+   "tennis_forehand": 1,
+   "tennis_serve": 90
+  }
+ },
+ "dropped_no_pose": 565,
+ "pck": {
+  "as_is": 0.618797349600493,
+  "swapped": 0.9172705051905518,
+  "per_joint": {
+   "head": 0.9219592550258858,
+   "l_shoulder": 0.9398437976160416,
+   "r_shoulder": 0.9277271673827394,
+   "l_elbow": 0.8980841155914199,
+   "r_elbow": 0.897592809108021,
+   "l_wrist": 0.9067121233258929,
+   "r_wrist": 0.900106660138833,
+   "l_hip": 0.9314042784423721,
+   "r_hip": 0.9213742739661844,
+   "l_knee": 0.9167539189806964,
+   "r_knee": 0.9209984109968143,
+   "l_ankle": 0.9201374896290151,
+   "r_ankle": 0.9202815130510038
+  },
+  "convention_used": "swapped",
+  "note": "PCK@0.2 with threshold 0.2 x max(bbox width, height); MediaPipe nose used for the head joint."
+ }
+}
