@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Federated server console</title><link rel="stylesheet" href="/shared/style.css"></head>
+<body>
+<header class="top">
+  <h1>Federated HAR server</h1>
+  <span class="badge purple" id="b-version">global v–</span>
+  <span class="badge grey" id="b-phase">–</span>
+  <span class="badge grey" id="b-ws">live feed: connecting</span>
+  <span class="badge orange" id="b-placeholder" hidden>placeholder model (Kaggle outputs not installed)</span>
+  <span class="sp"></span>
+  <span class="quiet" id="who"></span>
+  <button id="logout">Sign out</button>
+</header>
+<main>
+  <div class="grid2">
+    <div class="card">
+      <h2>Aggregation, live <span class="badge teal" id="b-algo">–</span></h2>
+      <div id="agg"></div>
+    </div>
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="card">
+        <h2>Client nodes</h2>
+        <table id="nodes"></table>
+        <p class="quiet" style="margin:8px 0 0">A node is online if it sent a heartbeat in the last 30 s. On free hosting a sleeping node wakes when someone opens its page.</p>
+      </div>
+      <div class="card">
+        <h2>Round control</h2>
+        <div class="row">
+          <button class="primary" id="start">Start a round</button>
+          <span id="round-info" class="quiet"></span>
+        </div>
+        <div class="err" id="round-err"></div>
+        <h3>Settings</h3>
+        <form id="settings" class="grid3">
+          <label class="f">Server algorithm <select name="algorithm"><option value="fedadam">FedAdam</option><option value="fedavg">FedAvg</option></select></label>
+          <label class="f">Server step η <input name="eta" type="number" step="any"></label>
+          <label class="f">FedProx μ <input name="mu" type="number" step="any"></label>
+          <label class="f">Ditto λ <input name="ditto_lambda" type="number" step="any"></label>
+          <label class="f">Local steps <input name="local_steps" type="number" min="1" max="200"></label>
+          <label class="f">Round timeout (s) <input name="round_timeout" type="number" min="30"></label>
+          <label class="f">Auto round every (s, 0 = off) <input name="auto_interval" type="number" min="0"></label>
+          <label class="f">Exact Shapley <select name="shapley"><option value="true">on</option><option value="false">off</option></select></label>
+          <div style="display:flex;align-items:end"><button type="submit">Save settings</button></div>
+        </form>
+        <p class="quiet" id="settings-note"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Numbers exchanged with the clients</h2>
+    <p class="quiet" style="margin-top:0">Every model download and upload, with the first values of three tensors, so the same numbers can be matched on the client pages.</p>
+    <div style="overflow-x:auto;max-height:420px"><table id="traffic" class="wide-table"><tr><th>Time</th><th>Direction</th><th>Round / version</th><th class="num">Size</th><th>l0f_b[0..3]</th><th>att_v[0..3]</th><th>out_b[0..3]</th></tr></table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Contribution history</h2>
+      <p class="quiet" style="margin-top:0">Click a round to replay its aggregation above. Rounds marked <span class="badge grey">sim</span> come from the Kaggle simulation.</p>
+      <div id="hist"></div>
+    </div>
+    <div class="card">
+      <h2>Current global model <span class="quiet" id="gsum-v"></span></h2>
+      <div style="max-height:360px;overflow:auto"><table id="gsum"></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Event log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="grid2" id="admin-only" hidden>
+    <div class="card">
+      <h2>Users</h2>
+      <table id="users"></table>
+      <h3>Add a user</h3>
+      <form id="adduser" class="row">
+        <input name="username" placeholder="username" required style="width:130px">
+        <input name="password" placeholder="password (6+)" type="password" required style="width:140px">
+        <select name="role"><option value="viewer">viewer</option><option value="operator">operator</option><option value="admin">admin</option></select>
+        <input name="node_id" type="number" min="1" placeholder="node" style="width:80px">
+        <button type="submit">Add</button>
+      </form>
+      <div class="err" id="user-err"></div>
+    </div>
+    <div class="card">
+      <h2>Audit trail</h2>
+      <div class="log" id="audit"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { session, api, fmt, pct, sgn, time, esc, connectWS, wsURL, logLine, describeServerEvent, AggregationView, shareHistory, NODE_COLORS } from '/shared/common.js';
+
+if (!session.token) location.href = '/';
+const me = session.user || {};
+const isAdmin = me.role === 'admin';
+const $ = s => document.querySelector(s);
+$('#who').textContent = `${me.username} (${me.role})`;
+$('#logout').onclick = () => { session.clear(); location.href = '/'; };
+$('#admin-only').hidden = !isAdmin;
+if (!isAdmin) { $('#start').disabled = true; $('#settings').querySelectorAll('input,select,button').forEach(x => x.disabled = true); $('#settings-note').textContent = 'Only the admin can start rounds and change settings.'; }
+
+const view = new AggregationView($('#agg'));
+let ST = null, clockSkew = 0, settingsLoaded = false;
+
+// state
+async function refresh() {
+  try {
+    ST = await api('/api/state');
+    clockSkew = ST.now - Date.now() / 1000;
+    render();
+  } catch (e) { console.warn(e); }
+}
+function render() {
+  const s = ST;
+  $('#b-version').textContent = `global v${s.version}`;
+  $('#b-phase').textContent = s.phase === 'idle' ? 'idle' : `round ${s.round}: ${s.phase}`;
+  $('#b-phase').className = 'badge ' + (s.phase === 'idle' ? 'grey' : 'orange');
+  $('#b-algo').textContent = s.settings.algorithm === 'fedadam' ? `FedAdam η=${s.settings.eta}` : 'FedAvg';
+  $('#b-placeholder').hidden = !s.placeholder_model;
+  const now = Date.now() / 1000 + clockSkew;
+  $('#nodes').innerHTML = `<tr><th>Node</th><th>State</th><th class="num">n</th><th class="num">Labelled</th><th class="num">Has</th><th>Status</th></tr>` +
+    Object.entries(s.nodes).map(([k, n]) => {
+      const on = n.last_seen && now - n.last_seen < 30;
+      const inRound = s.expected.includes(+k), got = s.received.includes(+k);
+      return `<tr><td><b style="color:${NODE_COLORS[k]}">Client ${k}</b>${n.url ? ` <a href="${esc(n.url)}" target="_blank" rel="noopener" class="quiet">open</a>` : ''}</td>
+        <td>${on ? '<span class="pill-ok">online</span>' : `<span class="quiet">${n.last_seen ? 'seen ' + Math.round(now - n.last_seen) + ' s ago' : 'never seen'}</span>`}
+        ${s.phase !== 'idle' && inRound ? (got ? ' <span class="badge teal">update in</span>' : ' <span class="badge orange">training</span>') : ''}</td>
+        <td class="num">${n.n ?? '—'}</td><td class="num">${n.labelled ?? '—'}</td><td class="num">${n.has_version != null ? 'v' + n.has_version : '—'}</td>
+        <td class="quiet" style="max-width:220px">${esc(n.status || '')}</td></tr>`;
+    }).join('');
+  if (s.phase === 'collecting' && s.opened_at) {
+    const left = Math.max(0, Math.round(s.opened_at + s.settings.round_timeout - now));
+    $('#round-info').textContent = `Round ${s.round}: ${s.received.length} of ${s.expected.length} updates in, timeout in ${left} s`;
+  } else if (s.phase === 'aggregating') $('#round-info').textContent = `Round ${s.round}: aggregating`;
+  else $('#round-info').textContent = `${s.online.length} node(s) online. A round trains every online node.`;
+  if (isAdmin) $('#start').disabled = s.phase !== 'idle';
+  if (!settingsLoaded) {
+    const f = $('#settings');
+    for (const [k, v] of Object.entries(s.settings)) if (f[k]) f[k].value = String(v);
+    settingsLoaded = true;
+  }
+  $('#gsum-v').textContent = `v${s.version}, ${s.server_val_windows} server validation windows`;
+  $('#gsum').innerHTML = `<tr><th>Tensor</th><th>Shape</th><th class="num">‖w‖</th><th class="num">mean</th><th>first values</th></tr>` +
+    Object.entries(s.global_summary).map(([k, t]) => `<tr><td class="mono">${esc(k)}</td><td class="mono">${t.shape.join('×')}</td><td class="num">${fmt(t.norm, 3)}</td><td class="num">${sgn(t.mean, 4)}</td><td class="mono">${t.first.map(v => fmt(v, 4)).join(', ')}</td></tr>`).join('');
+}
+
+// traffic table
+function traffic(e) {
+  if (e.kind !== 'global_sent' && e.kind !== 'update_received') return;
+  const fv = e.first_values || {};
+  const cell = k => `<td class="mono">${(fv[k] || []).map(v => fmt(v, 4)).join(', ')}</td>`;
+  const dir = e.kind === 'global_sent' ? `Server → <b style="color:${NODE_COLORS[e.node]}">C${e.node}</b>` : `<b style="color:${NODE_COLORS[e.node]}">C${e.node}</b> → Server`;
+  const tag = e.kind === 'global_sent' ? `global v${e.version}` : `round ${e.round}, n=${e.n}, ‖d‖=${fmt(e.update_norm, 3)}`;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="quiet">${time(e.ts)}</td><td>${dir}</td><td>${tag}</td><td class="num">${(e.bytes / 1e6).toFixed(2)} MB</td>${cell('l0f_b')}${cell('att_v')}${cell('out_b')}`;
+  const t = $('#traffic'); t.rows[0].after(tr);
+  while (t.rows.length > 25) t.deleteRow(t.rows.length - 1);
+}
+
+// history
+async function loadHistory() {
+  try {
+    const h = await api('/api/rounds');
+    const all = [...h.simulated, ...h.live];
+    shareHistory($('#hist'), all);
+    $('#hist').querySelectorAll('tr').forEach((tr, i) => {
+      if (!i) return;
+      const n = parseInt(tr.cells[0].textContent);
+      const sim = tr.cells[0].querySelector('.badge');
+      tr.style.cursor = 'pointer';
+      tr.onclick = async () => {
+        const list = sim ? h.simulated : h.live;
+        try { const r = await api('/api/rounds/' + n); view.show(sim ? { ...r, simulated: true } : r); } catch (err) { alert(err.message); }
+      };
+    });
+    // show the latest round on first load, so the panel is never empty
+    if (!view.shown && all.length) { view.shown = true; const last = h.live.length ? h.live[h.live.length - 1] : null;
+      if (last) api('/api/rounds/' + last.round).then(r => view.show(r)).catch(() => {}); }
+  } catch (e) { console.warn(e); }
+}
+
+// users and audit
+async function loadUsers() {
+  if (!isAdmin) return;
+  const us = await api('/api/users');
+  $('#users').innerHTML = `<tr><th>User</th><th>Role</th><th>Node</th><th></th></tr>` + us.map(u => `<tr><td>${esc(u.username)}</td><td>${u.role}</td><td>${u.node_id ?? ''}</td>
+    <td>${u.username !== me.username ? `<button data-del="${esc(u.username)}">Delete</button>` : ''}</td></tr>`).join('');
+  $('#users').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete user ' + b.dataset.del + '?')) return;
+    await api('/api/users/' + encodeURIComponent(b.dataset.del), { method: 'DELETE' }); loadUsers(); loadAudit();
+  });
+}
+async function loadAudit() {
+  if (!isAdmin) return;
+  const a = await api('/api/audit');
+  $('#audit').innerHTML = a.map(r => `<div><span class="t">${new Date(r.ts * 1000).toLocaleString()}</span><b>${esc(r.user)}</b> ${esc(r.action)} ${esc(r.detail || '')}</div>`).join('');
+}
+$('#adduser').onsubmit = async e => {
+  e.preventDefault(); const f = e.target; $('#user-err').textContent = '';
+  try {
+    await api('/api/users', { method: 'POST', body: { username: f.username.value, password: f.password.value, role: f.role.value, node_id: f.node_id.value ? +f.node_id.value : null } });
+    f.reset(); loadUsers(); loadAudit();
+  } catch (err) { $('#user-err').textContent = err.message; }
+};
+
+// controls
+$('#start').onclick = async () => {
+  $('#round-err').textContent = '';
+  try { await api('/api/rounds/start', { method: 'POST' }); refresh(); loadAudit(); } catch (e) { $('#round-err').textContent = e.message; }
+};
+$('#settings').onsubmit = async e => {
+  e.preventDefault(); const f = e.target;
+  const body = { algorithm: f.algorithm.value, eta: +f.eta.value, mu: +f.mu.value, ditto_lambda: +f.ditto_lambda.value,
+    local_steps: +f.local_steps.value, round_timeout: +f.round_timeout.value, auto_interval: +f.auto_interval.value, shapley: f.shapley.value === 'true' };
+  try { await api('/api/settings', { method: 'PUT', body }); $('#settings-note').textContent = 'Saved. The next round uses these settings.'; refresh(); loadAudit(); }
+  catch (err) { $('#settings-note').textContent = err.message; }
+};
+
+// live feed
+function onEvent(e) {
+  logLine($('#log'), e.ts, describeServerEvent(e));
+  view.onEvent(e);
+  traffic(e);
+  if (['round_opened', 'update_received', 'round_done', 'round_timeout', 'round_cancelled', 'round_failed', 'node_online', 'settings_changed'].includes(e.kind)) refresh();
+  if (e.kind === 'round_done') { loadHistory(); loadAudit(); }
+}
+(async () => {
+  try { const evs = await api('/api/events'); evs.forEach(e => { logLine($('#log'), e.ts, describeServerEvent(e)); traffic(e); }); } catch {}
+  connectWS(wsURL(location.href, '/ws/events?token=' + encodeURIComponent(session.token)), onEvent,
+    ok => { $('#b-ws').textContent = ok ? 'live feed: connected' : 'live feed: reconnecting'; $('#b-ws').className = 'badge ' + (ok ? 'teal' : 'grey'); });
+  refresh(); loadHistory(); loadUsers(); loadAudit();
+  setInterval(refresh, 3000);
+})();
+</script>
+</body></html>
