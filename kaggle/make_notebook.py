@@ -42,6 +42,7 @@ Every stage saves its progress in `/kaggle/working/cache`; if a cell fails, fix 
     code('''
 import os, subprocess, sys
 os.makedirs('/kaggle/working/btp/btpcore', exist_ok=True)
+os.makedirs('/kaggle/working/btp/kaggle', exist_ok=True)
 os.makedirs('/kaggle/working/cache/lm', exist_ok=True)
 # MediaPipe goes into a separate folder so its NumPy/OpenCV versions cannot break PyTorch or scikit-learn here.
 !pip install -q --no-warn-conflicts --target /kaggle/tmp/mp mediapipe
