@@ -219,7 +219,7 @@ function sendFrame(t, lm, ar) {
 const TL = [];
 let hasPred = false;     // keep the last label on screen while a looping clip refills
 function onStream(m) {
-  if (m.type === 'warming') { if (!hasPred) $('#pred').textContent = '…'; $('#pred-sub').textContent = `Collecting frames: ${m.frames_buffered} of ${m.need} (shoulders, hips and knees must be visible)`; }
+  if (m.type === 'warming') { if (!hasPred) $('#pred').textContent = '…'; $('#pred-sub').textContent = `Collecting frames: ${m.frames_buffered} of ${m.need}. ` + (m.hidden && m.hidden.length ? `Not visible enough: ${m.hidden.join(', ')}.` : 'Shoulders, hips and one knee must be visible.'); }
   if (m.type === 'pred') {
     hasPred = true;
     $('#pred').textContent = nice(m.label);

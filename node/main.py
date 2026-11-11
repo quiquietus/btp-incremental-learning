@@ -382,9 +382,11 @@ async def ws_stream(ws: WebSocket):
                     new = sf.buf[-n_new:]
                     history.extend(new); session.extend(new)
                     since += n_new
-                if lm is None or len(sf.buf) == 0:
-                    if msg.get('report_missing'):
-                        await ws.send_text(json.dumps({'type': 'nopose'}))
+                if lm is None or not n_new and len(sf.buf) < min_frames:
+                    if not n_new and sf.missing and sf.missing % 10 == 1:
+                        hidden = ['whole body'] if lm is None else FT.hidden_joints(np.asarray(lm, np.float32))
+                        await ws.send_text(json.dumps({'type': 'warming', 'frames_buffered': len(sf.buf),
+                                                       'need': min_frames, 'hidden': hidden}))
                     continue
                 if since >= every and len(sf.buf) >= min_frames:
                     since = 0

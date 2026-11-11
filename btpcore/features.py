@@ -19,6 +19,20 @@ JOINT_NAMES = ['l_shoulder', 'r_shoulder', 'l_elbow', 'r_elbow', 'l_wrist', 'r_w
                'l_hip', 'r_hip', 'l_knee', 'r_knee', 'l_ankle', 'r_ankle']
 GATE = [L_SH, R_SH, L_HIP, R_HIP, L_KN, R_KN]   # must be visible for a frame to count
 
+
+def stream_ok(lm):
+    """Live gate, looser than training: shoulders and hips visible, and at least one
+    knee. Side-on clips often hide the far knee behind a barbell or the other leg;
+    MediaPipe still estimates its position, so the frame is kept."""
+    v = np.asarray(lm)[:, 3]
+    return bool(np.all(v[[L_SH, R_SH, L_HIP, R_HIP]] >= VIS_THRESHOLD) and max(v[L_KN], v[R_KN]) >= VIS_THRESHOLD)
+
+
+def hidden_joints(lm):
+    v = np.asarray(lm)[:, 3]
+    names = {L_SH: 'left shoulder', R_SH: 'right shoulder', L_HIP: 'left hip', R_HIP: 'right hip', L_KN: 'left knee', R_KN: 'right knee'}
+    return [names[j] for j in GATE if v[j] < VIS_THRESHOLD]
+
 # (a, b, c): angle at b between b->a and b->c
 ANGLES = [
     ('l_elbow', L_SH, L_EL, L_WR), ('r_elbow', R_SH, R_EL, R_WR),
@@ -203,7 +217,7 @@ class StreamFeaturizer:
 
     def push(self, t, lm, aspect=1.0):
         """t in seconds, lm (33, 4) or None. Returns number of new frames."""
-        if lm is None or not np.all(np.asarray(lm)[GATE, 3] >= VIS_THRESHOLD):
+        if lm is None or not stream_ok(lm):
             # skip the frame; the next good one is interpolated across the gap,
             # and a gap over 1 s starts a new clip (checked below)
             self.missing += 1
