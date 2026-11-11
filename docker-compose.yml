@@ -1,0 +1,24 @@
+# Everything on one computer: server on :8000, client nodes on :8001-8003.
+x-common: &common
+  build: .
+  environment: &env
+    JWT_SECRET: local-demo-secret
+    SERVER_URL: http://server:8000          # how nodes reach the server inside docker
+    SERVER_PUBLIC_URL: http://localhost:8000  # how your browser reaches it
+services:
+  server:
+    <<: *common
+    environment: { <<: *env, ROLE: server }
+    ports: ["8000:8000"]
+  node1:
+    <<: *common
+    environment: { <<: *env, ROLE: node, NODE_ID: "1", PUBLIC_URL: "http://localhost:8001" }
+    ports: ["8001:8000"]
+  node2:
+    <<: *common
+    environment: { <<: *env, ROLE: node, NODE_ID: "2", PUBLIC_URL: "http://localhost:8002" }
+    ports: ["8002:8000"]
+  node3:
+    <<: *common
+    environment: { <<: *env, ROLE: node, NODE_ID: "3", PUBLIC_URL: "http://localhost:8003" }
+    ports: ["8003:8000"]
