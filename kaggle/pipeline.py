@@ -535,13 +535,15 @@ class TorchIncLearner:
         idx = np.random.default_rng(0).choice(len(X), n, replace=False)
         fis = {k: torch.zeros_like(p) for k, p in self.net.named_parameters()}
         self.net.eval()
-        for i in idx:
-            out = self.net(torch.as_tensor(X[i:i + 1], device=self.dev), self.mask)
-            loss = torch.nn.functional.cross_entropy(out, torch.as_tensor(y[i:i + 1], device=self.dev))
-            self.net.zero_grad(); loss.backward()
-            for k, p in self.net.named_parameters():
-                if p.grad is not None:
-                    fis[k] += p.grad.detach() ** 2 / n
+        # cuDNN refuses RNN backward in eval mode; the native kernel allows it (and keeps dropout off)
+        with torch.backends.cudnn.flags(enabled=False):
+            for i in idx:
+                out = self.net(torch.as_tensor(X[i:i + 1], device=self.dev), self.mask)
+                loss = torch.nn.functional.cross_entropy(out, torch.as_tensor(y[i:i + 1], device=self.dev))
+                self.net.zero_grad(); loss.backward()
+                for k, p in self.net.named_parameters():
+                    if p.grad is not None:
+                        fis[k] += p.grad.detach() ** 2 / n
         if self.fisher is None:
             self.fisher = fis
         else:
