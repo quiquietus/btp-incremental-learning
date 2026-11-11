@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client node sign in</title><link rel="stylesheet" href="/shared/style.css"></head>
+<body>
+<div class="card login">
+  <h2>Client node <span class="badge" id="nid">…</span></h2>
+  <p class="quiet">Live pose from your camera or a video, activity from this node's model, and the numbers it exchanges with the federated server.</p>
+  <form id="f" class="row" style="flex-direction:column;align-items:stretch">
+    <label class="f">Username <input name="username" autocomplete="username" required></label>
+    <label class="f">Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit">Sign in</button>
+    <div class="err" id="err"></div>
+  </form>
+  <p class="quiet">Use the operator account for this node (for example <span class="mono" id="hint">client1</span>) to teach the model. Viewers and the admin can watch.</p>
+</div>
+<script type="module">
+import { doLogin, session, api } from '/shared/common.js';
+if (session.token) location.href = '/app';
+api('/api/config').then(c => { document.getElementById('nid').textContent = 'node ' + c.node_id; document.getElementById('hint').textContent = 'client' + c.node_id; }).catch(() => {});
+const f = document.getElementById('f');
+f.onsubmit = e => { e.preventDefault(); doLogin(f, document.getElementById('err'), '', () => location.href = '/app'); };
+</script>
+</body></html>
