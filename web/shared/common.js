@@ -152,7 +152,7 @@ export class AggregationView {
     const layers = Object.keys(cl[0].layer_share);
     const maxPhi = Math.max(1e-9, ...cl.map(c => Math.abs(c.shapley || 0)));
     this.$('#agg-contrib').innerHTML = `
-      <div class="quiet" style="margin-bottom:6px">Share = ⟨c_k, Δ⟩ / ‖Δ‖² (sums to ${fmt(r.shares_sum, 4)}). Alignment = cos(d_k, Δ). Shapley = fair split of the validation macro-F1 gain (${r.shapley_sum != null ? 'sums to ' + sgn(r.shapley_sum, 4) : 'not computed'}).</div>
+      <div class="quiet" style="margin-bottom:6px">Share = ⟨c_k, Δ⟩ / ‖Δ‖² (sums to ${fmt(r.shares_sum, 4)}) and alignment = cos(d_k, Δ) measure influence on the update, not quality. Shapley = fair split of the validation macro-F1 gain, so it shows usefulness (${r.shapley_sum != null ? 'sums to ' + sgn(r.shapley_sum, 4) : 'not computed'}).</div>
       <div class="stack">${share}</div>
       <table style="margin-top:8px"><tr><th>Client</th><th class="num">n_k</th><th class="num">p_k</th><th class="num">‖d_k‖</th><th class="num">Share</th><th class="num">Alignment</th><th class="num">Shapley</th><th class="num">Leave-one-out</th></tr>
       ${cl.map(c => `<tr class="${c.node === this.me ? 'hl' : ''}"><td>${this.nodeName(c.node)}</td><td class="num">${c.n}</td><td class="num">${fmt(c.p, 3)}</td><td class="num">${fmt(c.update_norm, 4)}</td><td class="num"><b>${pct(c.share)}</b></td><td class="num">${sgn(c.alignment, 3)}</td>
