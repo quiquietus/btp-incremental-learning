@@ -35,10 +35,11 @@ P = {
               'sampler': 'class-balanced', 'early_stop_metric': 'validation window macro-F1'},
     'incremental': {'buffer': 16, 'lr': 1e-4, 'optimizer': 'Adam', 'replay_ratio': 0.2, 'reservoir': 2000,
                     'lambda_ewc': 1000.0, 'lambda_ewc_sensitivity': [100.0, 1000.0, 10000.0],
-                    'fisher_samples': 500, 'passes_per_chunk': 3, 'chunks_expA': 4, 'class_tasks_expB': [10, 2, 2]},
+                    'fisher_samples': 500, 'passes_per_chunk': 3, 'chunks_expA': 4, 'class_tasks_expB': [10, 2, 2],
+                    'expB_passes': 10, 'expB_lr': 5e-4, 'expB_new_head_init': 'mean of seen-class output rows'},
     'federated': {'clients': 3, 'rounds': 30, 'eta_search_rounds': 10, 'local_epochs': 2, 'local_lr': 1e-3,
                   'local_batch': 64, 'participation': 'all', 'dirichlet_alpha': 0.5, 'client_test_share': 0.2,
-                  'mu': 0.01, 'eta_grid': [1e-3, 1e-2, 1e-1], 'beta1': 0.9, 'beta2': 0.99, 'tau': 1e-3,
+                  'mu': 0.01, 'eta_grid': [1e-3, 1e-2, 3e-2, 1e-1], 'beta1': 0.9, 'beta2': 0.99, 'tau': 1e-3,
                   'ditto_lambda': 0.1, 'server_val_windows': 400, 'shapley': 'exact (2^3 subsets)'},
     'live': {'predict_every_frames': 8, 'smoothing_predictions': 5},
 }
@@ -530,10 +531,10 @@ class TorchIncLearner:
     """Mirror of the node's incremental learner: buffer of 16 windows -> one Adam step;
     optional replay (20% of each batch from a reservoir) and EWC."""
 
-    def __init__(self, net, dev, replay=False, ewc=False, lam=1000.0, reservoir=None, mask=None):
+    def __init__(self, net, dev, replay=False, ewc=False, lam=1000.0, reservoir=None, mask=None, lr=None):
         import torch
         self.torch = torch; self.net = net; self.dev = dev
-        self.opt = torch.optim.Adam(net.parameters(), lr=P['incremental']['lr'])
+        self.opt = torch.optim.Adam(net.parameters(), lr=lr or P['incremental']['lr'])
         self.replay, self.ewc, self.lam = replay, ewc, lam
         self.res = reservoir; self.mask = mask
         self.fisher = None; self.anchor = None
@@ -703,13 +704,19 @@ def stage_cl():
         R = []; Rf = []
         for k in range(len(tasks)):
             mt = torch.as_tensor(seen_masks[k], device=dev)
+            if k > 0:
+                # new output units start as the average seen-class unit; random rows otherwise
+                # dominate the larger trained features and every prediction collapses onto one new class
+                with torch.no_grad():
+                    old = torch.as_tensor(np.concatenate(tasks[:k]), device=dev); new = torch.as_tensor(tasks[k], device=dev)
+                    net.out.weight[new] = net.out.weight[old].mean(0); net.out.bias[new] = net.out.bias[old].mean()
             if k > 0 and flags is not None:
                 L.mask = mt
-                L.learn(*task_stream[k], passes=inc['passes_per_chunk'])
+                L.learn(*task_stream[k], passes=inc['expB_passes'])
                 res.add(*task_stream[k])
             if flags is not None:
                 if k == 0:
-                    L = TorchIncLearner(net, dev, flags[0], flags[1], lam=inc['lambda_ewc'], reservoir=res, mask=mt)
+                    L = TorchIncLearner(net, dev, flags[0], flags[1], lam=inc['lambda_ewc'], reservoir=res, mask=mt, lr=inc['expB_lr'])
                 if flags[1]:
                     L.consolidate(*task_stream[k])
             row = [acc_f1(net, *task_te[j], seen_masks[k]) for j in range(len(tasks))]
@@ -1007,14 +1014,15 @@ def make_tables():
     lines.append('\n## Federated learning\n')
     lo = fed['local_only']
     last_o, last_a = fed['ours'][-1], fed['fedavg'][-1]
-    lines.append('| Method | Test macro-F1 (global, final round) | Mean personal F1 on own client test | Worst client F1 | Rounds to 90% of centralised |\n|---|---|---|---|---|')
+    lines.append('| Method | Test macro-F1 (global, final round) | Mean of last 5 rounds | Mean personal F1 on own client test | Worst client F1 | Rounds to 90% of centralised |\n|---|---|---|---|---|---|')
     pf = [v['personal_f1'] for v in last_o['client_eval'].values()]; gf = [v['global_f1'] for v in last_a['client_eval'].values()]
-    lines.append(f"| FedProx + FedAdam + Ditto (eta {P['federated'].get('eta_selected')}) | {last_o['global_test_macro_f1']:.3f} | {np.mean(pf):.3f} | {min(pf):.3f} | {fed.get('rounds_to_90pct_centralised_ours')} |")
-    lines.append(f"| FedAvg | {last_a['global_test_macro_f1']:.3f} | {np.mean(gf):.3f} | {min(gf):.3f} | {fed.get('rounds_to_90pct_centralised_fedavg')} |")
-    lines.append(f"| Local-only (mean of clients) | {np.mean([v['global_test_f1'] for v in lo.values()]):.3f} | {np.mean([v['own_test_f1'] for v in lo.values()]):.3f} | {min(v['own_test_f1'] for v in lo.values()):.3f} | — |")
-    lines.append(f"| Centralised (upper bound) | {fed['centralised_test_macro_f1_mean']:.3f} | — | — | — |")
+    l5 = lambda h: f"{np.mean([r['global_test_macro_f1'] for r in h[-5:]]):.3f} ± {np.std([r['global_test_macro_f1'] for r in h[-5:]]):.3f}"
+    lines.append(f"| FedProx + FedAdam + Ditto (eta {P['federated'].get('eta_selected')}) | {last_o['global_test_macro_f1']:.3f} | {l5(fed['ours'])} | {np.mean(pf):.3f} | {min(pf):.3f} | {fed.get('rounds_to_90pct_centralised_ours')} |")
+    lines.append(f"| FedAvg | {last_a['global_test_macro_f1']:.3f} | {l5(fed['fedavg'])} | {np.mean(gf):.3f} | {min(gf):.3f} | {fed.get('rounds_to_90pct_centralised_fedavg')} |")
+    lines.append(f"| Local-only (mean of clients) | {np.mean([v['global_test_f1'] for v in lo.values()]):.3f} | — | {np.mean([v['own_test_f1'] for v in lo.values()]):.3f} | {min(v['own_test_f1'] for v in lo.values()):.3f} | — |")
+    lines.append(f"| Centralised (upper bound) | {fed['centralised_test_macro_f1_mean']:.3f} | — | — | — | — |")
     lines.append(f"\nBytes per round (3 clients, up and down): {last_o['bytes_round'] / 1e6:.2f} MB\n")
-    lines.append('\n### Noisy-client sanity check (client 3 sends noise)\n\n| Round | Client | Share | Alignment | Shapley |\n|---|---|---|---|---|')
+    lines.append('\n### Noisy-client sanity check (client 3 sends noise)\n\nShare and alignment measure influence on the aggregate, so a large random update scores high on both; Shapley measures usefulness on validation data.\n\n| Round | Client | Share | Alignment | Shapley |\n|---|---|---|---|---|')
     for r in fed['noisy_client_check']:
         for cl in r['clients']:
             lines.append(f"| {r['round']} | {cl['node']} | {cl['share']:+.3f} | {cl['alignment']:+.3f} | {cl['shapley']:+.4f} |")
