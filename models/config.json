@@ -170,7 +170,7 @@
   "K": 14
  },
  "fedadam": {
-  "eta": 0.1,
+  "eta": 0.03,
   "beta1": 0.9,
   "beta2": 0.99,
   "tau": 0.001
@@ -197,11 +197,14 @@
    10,
    2,
    2
-  ]
+  ],
+  "expB_passes": 10,
+  "expB_lr": 0.0005,
+  "expB_new_head_init": "mean of seen-class output rows"
  },
  "start_round": 30,
- "global_test_macro_f1": 0.6895660627907825,
+ "global_test_macro_f1": 0.7756650415812454,
  "central_best_seed": 0,
  "numpy_vs_torch_max_diff": 2.384185791015625e-07,
- "created": "2026-11-11 12:45"
+ "created": "2026-11-11 14:38"
 }
