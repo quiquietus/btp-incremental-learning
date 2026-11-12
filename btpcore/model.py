@@ -140,7 +140,7 @@ def softmax(logits):
     return e / e.sum(1, keepdims=True)
 
 
-def predict_proba(p, X, batch=256):
+def predict_proba(p, X, batch=64):
     X = np.asarray(X, np.float32)
     return np.concatenate([softmax(forward(p, X[i:i + batch])) for i in range(0, len(X), batch)], 0)
 

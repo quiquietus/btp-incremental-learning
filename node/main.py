@@ -29,7 +29,7 @@ NODE_ID = int(os.environ.get('NODE_ID', '1'))
 SERVER_URL = os.environ.get('SERVER_URL', 'http://localhost:8000').rstrip('/')
 if SERVER_URL and not SERVER_URL.startswith('http'):
     SERVER_URL = 'https://' + SERVER_URL
-PUBLIC_URL = os.environ.get('RENDER_EXTERNAL_URL') or os.environ.get('PUBLIC_URL')
+PUBLIC_URL = os.environ.get('PUBLIC_URL') or os.environ.get('RENDER_EXTERNAL_URL')
 NODE_TOKEN = auth.node_token(NODE_ID)
 
 app = FastAPI(title=f'BTP client node {NODE_ID}')
@@ -441,7 +441,9 @@ def health():
 
 @app.get('/')
 def index():
-    return FileResponse(os.path.join(WEB, 'client', 'index.html'))
+    # behind the single portal, sign-in happens on the portal page
+    page = 'client.html' if os.environ.get('PORTAL') else 'index.html'
+    return FileResponse(os.path.join(WEB, 'client', page))
 
 
 @app.get('/app')

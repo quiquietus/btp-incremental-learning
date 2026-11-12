@@ -469,7 +469,12 @@ def health():
 
 @app.get('/')
 def index():
-    return FileResponse(os.path.join(WEB, 'admin', 'index.html'))
+    return FileResponse(os.path.join(WEB, 'portal', 'index.html'))
+
+
+@app.get('/node/{k}')
+def node_slash(k: int):
+    return RedirectResponse(f'/node/{k}/')
 
 
 @app.get('/admin')
@@ -479,4 +484,8 @@ def admin_page():
 
 @app.get('/api/config')
 def config_public():
-    return {'role': 'server', 'classes': CFG['classes'], 'placeholder_model': CFG.get('placeholder', False)}
+    portal = bool(os.environ.get('PORTAL'))
+    with LOCK:
+        urls = {k: (f'/node/{k}/' if portal else n.get('url')) for k, n in STATE['nodes'].items()}
+    return {'role': 'server', 'classes': CFG['classes'], 'placeholder_model': CFG.get('placeholder', False),
+            'portal': portal, 'node_urls': urls}
