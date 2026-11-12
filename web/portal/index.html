@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Federated HAR portal · LNMIIT</title>
+<link rel="icon" href="/shared/lnmiit.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/style.css">
+<style>
+  .hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .9fr); gap: 28px; align-items: stretch; }
+  .hero-l { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-3) 70%, #1f5a8f 100%); color: #fff; border-radius: 18px; padding: 34px; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+  .hero-l::after { content: ""; position: absolute; right: -70px; top: -70px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(240,101,47,.45), transparent 70%); }
+  .hero-l .eyebrow { font: 600 12px var(--mono); color: #ffb08f; letter-spacing: .08em; text-transform: uppercase; }
+  .hero-l h1 { font-size: 32px; line-height: 1.15; margin: 10px 0 12px; letter-spacing: -.02em; max-width: 680px; }
+  .hero-l p { color: #c8daf0; max-width: 620px; margin: 0 0 18px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pills span { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); padding: 5px 11px; border-radius: 999px; font-size: 12.5px; }
+  .login-card { display: flex; flex-direction: column; justify-content: center; }
+  .login-card form { display: grid; gap: 12px; }
+  .login-card input { width: 100%; padding: 10px 12px; }
+  .login-card button.primary { padding: 11px; font-size: 15px; }
+  .acct { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; margin-top: 12px; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .roles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .role { border-top: 4px solid var(--sky); }
+  .role h3 { margin-top: 0 !important; }
+  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; counter-reset: s; }
+  .flow div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; box-shadow: var(--shadow); font-size: 13px; position: relative; }
+  .flow div b { display: block; margin-bottom: 4px; font-size: 13.5px; }
+  .flow div::before { counter-increment: s; content: counter(s); position: absolute; top: -10px; left: 12px; background: var(--orange); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--mono); }
+  @media (max-width: 1000px) { .hero, .roles, .flow { grid-template-columns: 1fr; } .hero-l h1 { font-size: 25px; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brandbar">
+    <a class="logo-chip" href="/"><img src="/shared/lnmiit.png" alt="LNMIIT logo"></a>
+    <div class="brand-text"><b>Federated Incremental HAR</b><span>BTP · Department of CSE · LNMIIT Jaipur</span></div>
+    <span class="sp"></span>
+    <span class="badge grey" id="b-server">checking the server…</span>
+  </div>
+  <nav class="navbar">
+    <a href="#signin">Sign in</a><a href="#about">About</a><a href="#portals">Portals</a><a href="#how">How a round works</a>
+  </nav>
+</header>
+
+<main>
+  <section class="sec" id="signin">
+    <div class="hero">
+      <div class="hero-l">
+        <div class="eyebrow">Health IoT · Federated learning · Continual learning</div>
+        <h1>Incremental Learning in a Federated Setup for Health IoT Devices</h1>
+        <p>Sports activity recognition from body pose. Three client devices learn from their own users, keep their data at home, and improve one shared model through federated rounds that you can watch step by step.</p>
+        <div class="pills"><span>MediaPipe Pose in the browser</span><span>Bi-LSTM + attention</span><span>Replay + EWC</span><span>FedProx · FedAdam · Ditto</span><span>Shapley contributions</span></div>
+      </div>
+      <div class="card login-card">
+        <h2>Sign in to your portal</h2>
+        <p class="quiet" style="margin-top:-6px">One login for everyone. The admin opens the aggregation console; each client operator opens their own node.</p>
+        <form id="f">
+          <label class="f">Username <input name="username" autocomplete="username" required autofocus></label>
+          <label class="f">Password <input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="primary" type="submit">Sign in</button>
+          <div class="err" id="err"></div>
+        </form>
+        <div class="acct"><b>admin</b><span>aggregation server console</span><b>client1 · client2 · client3</b><span>client node 1, 2 or 3</span><b>viewer</b><span>read-only view of everything</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="about">
+    <div class="sec-head"><span class="num">01</span><h2>About the system</h2><p>What runs where, and what never leaves a device.</p></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Activities</div><div class="v">14</div><div class="s">Penn Action sports classes</div></div>
+      <div class="kpi o"><div class="l">Video accuracy</div><div class="v">88.1%</div><div class="s">Bi-LSTM + attention, test set</div></div>
+      <div class="kpi t"><div class="l">Model size</div><div class="v">0.70 MB</div><div class="s">174k parameters, NumPy runtime</div></div>
+      <div class="kpi p"><div class="l">Federated clients</div><div class="v">3</div><div class="s">own data, own personal model</div></div>
+    </div>
+    <div class="grid2 even">
+      <div class="card"><h2>On each client device</h2>
+        <p class="quiet" style="margin:0">The browser finds 33 body landmarks with MediaPipe; only these coordinates go to the node. The node turns them into 46 features per frame, classifies 1.6 s windows with its personal Bi-LSTM, and learns from the operator's corrections in batches of 16 windows, using replay and EWC so it does not forget.</p></div>
+      <div class="card"><h2>On the aggregation server</h2>
+        <p class="quiet" style="margin:0">The server never sees raw data. In each round it receives model weights from the clients, combines them weighted by data size, applies a FedAdam step, and measures every client's contribution: update share, alignment and exact Shapley value on a validation set.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="portals">
+    <div class="sec-head"><span class="num">02</span><h2>Portals</h2><p>Your login decides which portal opens.</p></div>
+    <div class="roles">
+      <div class="card role" style="border-top-color:var(--orange)"><h3>Admin</h3><p class="quiet" style="margin:0">Starts rounds, tunes FedAdam, FedProx and Ditto, watches aggregation live, manages users and reads the audit trail.</p></div>
+      <div class="card role" style="border-top-color:var(--c1)"><h3>Client node 1</h3><p class="quiet" style="margin:0">Camera or video in, skeleton and activity out. Teach the personal model and see the numbers sent to the server.</p></div>
+      <div class="card role" style="border-top-color:var(--c2)"><h3>Client node 2</h3><p class="quiet" style="margin:0">A separate device with its own data partition, its own personal model and its own share of each round.</p></div>
+      <div class="card role" style="border-top-color:var(--c3)"><h3>Client node 3</h3><p class="quiet" style="margin:0">Same pipeline, different users. Its contribution is measured separately on the admin console.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="how">
+    <div class="sec-head"><span class="num">03</span><h2>How a federated round works</h2><p>The same five steps are animated live on the admin console and on every client page.</p></div>
+    <div class="flow">
+      <div><b>Updates received</b>Each client trains the global model locally with FedProx and uploads its weights w<sub>k</sub>.</div>
+      <div><b>Data weights</b>p<sub>k</sub> = n<sub>k</sub> / N, so clients with more data count more.</div>
+      <div><b>Weighted sum</b>Δ = Σ p<sub>k</sub> (w<sub>k</sub> − w<sub>t</sub>), the average update.</div>
+      <div><b>Server optimiser</b>FedAdam turns Δ into a step using its momentum and variance.</div>
+      <div><b>New global model</b>Sent back to every client; contributions and Shapley values are recorded.</div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { doLogin, session, api } from '/shared/common.js';
+import { initLayout } from '/shared/layout.js';
+initLayout();
+
+function home(u) {
+  if (!u) return null;
+  if (u.role === 'operator' && u.node_id) return `/node/${u.node_id}/`;
+  return '/admin';
+}
+let cfg = null;
+api('/api/config').then(c => { cfg = c; const b = document.getElementById('b-server'); b.textContent = 'server online'; b.className = 'badge teal'; })
+  .catch(() => { document.getElementById('b-server').textContent = 'server waking up…'; });
+if (session.token && session.user) location.href = home(session.user);
+const f = document.getElementById('f');
+f.onsubmit = e => {
+  e.preventDefault();
+  doLogin(f, document.getElementById('err'), '', d => {
+    let to = home(d);
+    if (d.role === 'operator' && cfg && !cfg.portal && cfg.node_urls && cfg.node_urls[d.node_id]) to = cfg.node_urls[d.node_id];
+    location.href = to;
+  });
+};
+</script>
+</body></html>
