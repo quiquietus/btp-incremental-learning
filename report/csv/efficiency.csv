@@ -1,0 +1,4 @@
+model,params,size_mb_float32,torch_cpu_ms_per_window,numpy_runtime_ms_per_window
+bilstm_attn,174158,0.696632,2.315023,12.711353
+birnn_attn,56654,0.226616,2.966871,
+bilstm_paper9d,155214,0.620856,2.232881,

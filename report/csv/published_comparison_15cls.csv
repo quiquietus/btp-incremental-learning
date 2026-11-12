@@ -1,0 +1,12 @@
+method,input,video_accuracy_percent
+"ACPS (Iqbal et al., FG 2017)",Pose,79.0
+"ST-AOG (Nie et al., CVPR 2015)",Pose + video,85.5
+"C3D (Tran et al., 2015)",Video,86.0
+"ST-GCN, from scratch",Skeleton,89.6
+"IDT-FV (Wang and Schmid, 2013)",Video,92.0
+"2s-AGCN, from scratch",Skeleton,93.1
+"PoTion (Choutas et al., CVPR 2018)",Pose heat maps,93.6
+"UNIK, from scratch",Skeleton,94.0
+"P-CNN (Cheron et al., ICCV 2015)",Pose + video,95.3
+Luvizon et al. (CVPR 2018),Pose,97.4
+Ours: Bi-LSTM + attention on MediaPipe skeleton,MediaPipe skeleton,87.8 ± 1.2

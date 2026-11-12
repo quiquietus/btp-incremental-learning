@@ -1,0 +1,5 @@
+method,final_round_f1,last5_mean_f1,last5_std_f1,best_round_f1,mean_personal_f1_final,worst_client_personal_f1_final,rounds_to_90pct_centralised
+ours_fedprox_fedadam_ditto,0.775665,0.751738,0.016761,0.775665,0.580813,0.435214,18
+fedavg,0.743642,0.753933,0.008944,0.770103,0.577143,0.380486,11
+local_only_mean,0.517525,,,,0.472094,0.343138,
+centralised_upper_bound,0.810872,,,,,,

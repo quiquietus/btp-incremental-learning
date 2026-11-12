@@ -1,0 +1,15 @@
+true_class,baseball_pitch,baseball_swing,bench_press,bowling,clean_and_jerk,golf_swing,jump_rope,jumping_jacks,pull_ups,push_ups,sit_ups,squats,tennis_forehand,tennis_serve
+baseball_pitch,607,2,0,3,4,0,0,0,0,0,0,5,1,6
+baseball_swing,1,95,0,0,0,1,0,0,0,0,0,0,2,0
+bench_press,24,0,241,0,11,0,0,0,0,11,2,21,3,1
+bowling,1,0,0,86,0,1,0,0,2,0,1,0,1,4
+clean_and_jerk,22,3,0,0,2116,0,0,0,9,0,0,48,6,0
+golf_swing,5,8,0,1,1,144,0,0,0,0,0,0,3,1
+jump_rope,1,0,0,1,0,0,42,0,0,0,0,1,0,0
+jumping_jacks,0,0,0,1,0,0,0,52,0,0,0,1,0,0
+pull_ups,3,0,0,61,12,0,0,0,226,0,0,20,0,0
+push_ups,8,0,0,2,0,0,0,0,1,11,1,7,0,0
+sit_ups,0,0,9,0,27,0,0,0,0,20,118,4,0,0
+squats,12,1,1,4,67,0,0,0,1,5,4,475,5,1
+tennis_forehand,8,2,0,2,1,1,0,0,0,0,0,5,82,7
+tennis_serve,1,0,0,4,0,0,5,0,0,0,0,0,0,236

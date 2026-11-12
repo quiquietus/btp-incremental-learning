@@ -1,0 +1,6 @@
+variant,final_average_accuracy,forgetting,bwt,fwt,intransigence_mean,adaptation_gain_f1
+no_update,0.300326,0.0,0.0,0.0,0.733932,
+naive,0.277118,0.841793,-0.841793,0.0,-0.073049,
+replay,0.512541,0.44679,-0.44679,0.0,-0.03118,
+ewc,0.280285,0.841793,-0.841793,0.0,-0.0778,
+replay_ewc,0.513611,0.478499,-0.478499,0.0,-0.064494,

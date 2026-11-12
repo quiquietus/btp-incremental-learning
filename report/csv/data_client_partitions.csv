@@ -1,0 +1,4 @@
+node,train_videos,test_videos,baseball_pitch,baseball_swing,bench_press,bowling,clean_and_jerk,golf_swing,jump_rope,jumping_jacks,pull_ups,push_ups,sit_ups,squats,tennis_forehand,tennis_serve
+1,183,46,9,29,0,78,1,36,6,2,51,0,14,1,0,2
+2,274,68,49,56,0,0,26,21,7,27,8,6,5,66,66,5
+3,194,48,30,3,38,2,7,15,16,17,10,4,8,1,1,90
