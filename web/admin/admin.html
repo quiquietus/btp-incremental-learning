@@ -1,33 +1,59 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Federated server console</title><link rel="stylesheet" href="/shared/style.css"></head>
+<title>Aggregation console · Federated HAR</title>
+<link rel="icon" href="/shared/lnmiit.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/style.css"></head>
 <body>
-<header class="top">
-  <h1>Federated HAR server</h1>
-  <span class="badge purple" id="b-version">global v–</span>
-  <span class="badge grey" id="b-phase">–</span>
-  <span class="badge grey" id="b-ws">live feed: connecting</span>
-  <span class="badge orange" id="b-placeholder" hidden>placeholder model (Kaggle outputs not installed)</span>
-  <span class="sp"></span>
-  <span class="quiet" id="who"></span>
-  <button id="logout">Sign out</button>
+<header class="site-header">
+  <div class="brandbar">
+    <a class="logo-chip" href="/admin"><img src="/shared/lnmiit.png" alt="LNMIIT logo"></a>
+    <div class="brand-text"><b>Aggregation server console</b><span>Federated Incremental HAR · LNMIIT Jaipur</span></div>
+    <span class="badge purple" id="b-version">global v–</span>
+    <span class="badge grey" id="b-phase">–</span>
+    <span class="badge grey" id="b-ws">live feed: connecting</span>
+    <span class="badge orange" id="b-placeholder" hidden>placeholder model (Kaggle outputs not installed)</span>
+    <span class="sp"></span>
+    <div class="user-box" id="who"></div>
+  </div>
+  <nav class="navbar">
+    <a href="#overview">Overview</a><a href="#aggregation">Live aggregation</a><a href="#clients">Clients &amp; rounds</a>
+    <a href="#traffic-sec">Numbers exchanged</a><a href="#history">History &amp; model</a><a href="#events">Event log</a>
+    <a href="#manage" id="nav-manage" hidden>Users &amp; audit</a><span style="flex:1"></span><span id="nav-nodes" class="row" style="gap:2px"></span>
+  </nav>
 </header>
 <main>
-  <div class="grid2">
+  <section class="sec" id="overview">
+    <div class="sec-head"><span class="num">01</span><h2>Overview</h2><p>State of the federation right now.</p></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Global model</div><div class="v" id="k-version">–</div><div class="s" id="k-algo">–</div></div>
+      <div class="kpi o"><div class="l">Round phase</div><div class="v" id="k-phase">–</div><div class="s" id="k-phase-s">–</div></div>
+      <div class="kpi t"><div class="l">Clients online</div><div class="v" id="k-online">–</div><div class="s">heartbeat in the last 30 s</div></div>
+      <div class="kpi p"><div class="l">Validation macro-F1</div><div class="v" id="k-f1">–</div><div class="s" id="k-f1-s">after the last round</div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="aggregation">
+    <div class="sec-head"><span class="num">02</span><h2>Live aggregation</h2><p>The five steps of the current or last round, one weight traced with real numbers, and each client's contribution.</p></div>
     <div class="card">
       <h2>Aggregation, live <span class="badge teal" id="b-algo">–</span></h2>
       <div id="agg"></div>
     </div>
-    <div style="display:grid;gap:16px;align-content:start">
+  </section>
+
+  <section class="sec" id="clients">
+    <div class="sec-head"><span class="num">03</span><h2>Clients and round control</h2><p>Who is online, what they hold, and the settings for the next round.</p></div>
+    <div class="grid2 even">
       <div class="card">
         <h2>Client nodes</h2>
-        <table id="nodes"></table>
-        <p class="quiet" style="margin:8px 0 0">A node is online if it sent a heartbeat in the last 30 s. On free hosting a sleeping node wakes when someone opens its page.</p>
+        <div style="overflow-x:auto"><table id="nodes"></table></div>
+        <p class="quiet" style="margin:8px 0 0">A node is online if it sent a heartbeat in the last 30 s. Use “open” to watch a client's page.</p>
       </div>
       <div class="card">
         <h2>Round control</h2>
         <div class="row">
-          <button class="primary" id="start">Start a round</button>
+          <button class="accent" id="start">Start a round</button>
           <span id="round-info" class="quiet"></span>
         </div>
         <div class="err" id="round-err"></div>
@@ -41,71 +67,72 @@
           <label class="f">Round timeout (s) <input name="round_timeout" type="number" min="30"></label>
           <label class="f">Auto round every (s, 0 = off) <input name="auto_interval" type="number" min="0"></label>
           <label class="f">Exact Shapley <select name="shapley"><option value="true">on</option><option value="false">off</option></select></label>
-          <div style="display:flex;align-items:end"><button type="submit">Save settings</button></div>
+          <div style="display:flex;align-items:end"><button class="primary" type="submit">Save settings</button></div>
         </form>
         <p class="quiet" id="settings-note"></p>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <h2>Numbers exchanged with the clients</h2>
-    <p class="quiet" style="margin-top:0">Every model download and upload, with the first values of three tensors, so the same numbers can be matched on the client pages.</p>
-    <div style="overflow-x:auto;max-height:420px"><table id="traffic" class="wide-table"><tr><th>Time</th><th>Direction</th><th>Round / version</th><th class="num">Size</th><th>l0f_b[0..3]</th><th>att_v[0..3]</th><th>out_b[0..3]</th></tr></table></div>
-  </div>
+  <section class="sec" id="traffic-sec">
+    <div class="sec-head"><span class="num">04</span><h2>Numbers exchanged with the clients</h2><p>Every model download and upload with the first values of three tensors, so the same numbers can be matched on the client pages.</p></div>
+    <div class="card">
+      <div style="overflow-x:auto;max-height:420px"><table id="traffic" class="wide-table"><tr><th>Time</th><th>Direction</th><th>Round / version</th><th class="num">Size</th><th>l0f_b[0..3]</th><th>att_v[0..3]</th><th>out_b[0..3]</th></tr></table></div>
+    </div>
+  </section>
 
-  <div class="grid2">
-    <div class="card">
-      <h2>Contribution history</h2>
-      <p class="quiet" style="margin-top:0">Click a round to replay its aggregation above. Rounds marked <span class="badge grey">sim</span> come from the Kaggle simulation.</p>
-      <div id="hist"></div>
+  <section class="sec" id="history">
+    <div class="sec-head"><span class="num">05</span><h2>History and current model</h2><p>Click a round to replay its aggregation. Rounds marked <span class="badge grey">sim</span> come from the Kaggle simulation.</p></div>
+    <div class="grid2">
+      <div class="card"><h2>Contribution history</h2><div id="hist" style="overflow-x:auto"></div></div>
+      <div class="card"><h2>Current global model <span class="quiet" id="gsum-v"></span></h2>
+        <div style="max-height:380px;overflow:auto"><table id="gsum"></table></div></div>
     </div>
-    <div class="card">
-      <h2>Current global model <span class="quiet" id="gsum-v"></span></h2>
-      <div style="max-height:360px;overflow:auto"><table id="gsum"></table></div>
-    </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <h2>Event log</h2>
-    <div class="log" id="log"></div>
-  </div>
+  <section class="sec" id="events">
+    <div class="sec-head"><span class="num">06</span><h2>Event log</h2><p>Everything the server did, newest first.</p></div>
+    <div class="card"><div class="log" id="log"></div></div>
+  </section>
 
-  <div class="grid2" id="admin-only" hidden>
-    <div class="card">
-      <h2>Users</h2>
-      <table id="users"></table>
-      <h3>Add a user</h3>
-      <form id="adduser" class="row">
-        <input name="username" placeholder="username" required style="width:130px">
-        <input name="password" placeholder="password (6+)" type="password" required style="width:140px">
-        <select name="role"><option value="viewer">viewer</option><option value="operator">operator</option><option value="admin">admin</option></select>
-        <input name="node_id" type="number" min="1" placeholder="node" style="width:80px">
-        <button type="submit">Add</button>
-      </form>
-      <div class="err" id="user-err"></div>
+  <section class="sec" id="manage" hidden>
+    <div class="sec-head"><span class="num">07</span><h2>Users and audit trail</h2><p>Accounts decide which portal opens after sign-in. Operators need a node number.</p></div>
+    <div class="grid2 even" id="admin-only">
+      <div class="card">
+        <h2>Users</h2>
+        <table id="users"></table>
+        <h3>Add a user</h3>
+        <form id="adduser" class="row">
+          <input name="username" placeholder="username" required style="width:130px">
+          <input name="password" placeholder="password (6+)" type="password" required style="width:140px">
+          <select name="role"><option value="viewer">viewer</option><option value="operator">operator</option><option value="admin">admin</option></select>
+          <input name="node_id" type="number" min="1" placeholder="node" style="width:80px">
+          <button class="primary" type="submit">Add</button>
+        </form>
+        <div class="err" id="user-err"></div>
+      </div>
+      <div class="card"><h2>Audit trail</h2><div class="log" id="audit"></div></div>
     </div>
-    <div class="card">
-      <h2>Audit trail</h2>
-      <div class="log" id="audit"></div>
-    </div>
-  </div>
+  </section>
 </main>
 
 <script type="module">
 import { session, api, fmt, pct, sgn, time, esc, connectWS, wsURL, logLine, describeServerEvent, AggregationView, shareHistory, NODE_COLORS } from '/shared/common.js';
+import { initLayout, userBox } from '/shared/layout.js';
 
 if (!session.token) location.href = '/';
 const me = session.user || {};
 const isAdmin = me.role === 'admin';
 const $ = s => document.querySelector(s);
-$('#who').textContent = `${me.username} (${me.role})`;
-$('#logout').onclick = () => { session.clear(); location.href = '/'; };
-$('#admin-only').hidden = !isAdmin;
+if (me.role === 'operator' && me.node_id) location.href = `/node/${me.node_id}/`;
+userBox($('#who'), me, () => { session.clear(); location.href = '/'; });
+$('#manage').hidden = !isAdmin; $('#nav-manage').hidden = !isAdmin;
+initLayout();
 if (!isAdmin) { $('#start').disabled = true; $('#settings').querySelectorAll('input,select,button').forEach(x => x.disabled = true); $('#settings-note').textContent = 'Only the admin can start rounds and change settings.'; }
 
 const view = new AggregationView($('#agg'));
-let ST = null, clockSkew = 0, settingsLoaded = false;
+let ST = null, clockSkew = 0, settingsLoaded = false, NODE_URLS = {};
+api('/api/config').then(c => { NODE_URLS = c.node_urls || {}; if (ST) render(); }).catch(() => {});
 
 // state
 async function refresh() {
@@ -123,11 +150,18 @@ function render() {
   $('#b-algo').textContent = s.settings.algorithm === 'fedadam' ? `FedAdam η=${s.settings.eta}` : 'FedAvg';
   $('#b-placeholder').hidden = !s.placeholder_model;
   const now = Date.now() / 1000 + clockSkew;
+  $('#k-version').textContent = `v${s.version}`;
+  $('#k-algo').textContent = s.settings.algorithm === 'fedadam' ? `FedAdam, η = ${s.settings.eta}, μ = ${s.settings.mu}` : `FedAvg, μ = ${s.settings.mu}`;
+  $('#k-phase').textContent = s.phase === 'idle' ? 'Idle' : s.phase[0].toUpperCase() + s.phase.slice(1);
+  $('#k-phase-s').textContent = s.phase === 'idle' ? `${s.round} round(s) run on this server` : `round ${s.round}: ${s.received.length} of ${s.expected.length} updates in`;
+  $('#k-online').textContent = `${s.online.length} / ${Object.keys(s.nodes).length}`;
+  $('#nav-nodes').innerHTML = Object.keys(s.nodes).map(k => NODE_URLS[k] ? `<a href="${esc(NODE_URLS[k])}" style="color:${NODE_COLORS[k]};filter:brightness(1.6)">Client ${k} ↗</a>` : '').join('');
   $('#nodes').innerHTML = `<tr><th>Node</th><th>State</th><th class="num">n</th><th class="num">Labelled</th><th class="num">Has</th><th>Status</th></tr>` +
     Object.entries(s.nodes).map(([k, n]) => {
       const on = n.last_seen && now - n.last_seen < 30;
       const inRound = s.expected.includes(+k), got = s.received.includes(+k);
-      return `<tr><td><b style="color:${NODE_COLORS[k]}">Client ${k}</b>${n.url ? ` <a href="${esc(n.url)}" target="_blank" rel="noopener" class="quiet">open</a>` : ''}</td>
+      const url = NODE_URLS[k] || n.url;
+      return `<tr><td><b style="color:${NODE_COLORS[k]}">Client ${k}</b>${url ? ` <a href="${esc(url)}" class="quiet">open</a>` : ''}</td>
         <td>${on ? '<span class="pill-ok">online</span>' : `<span class="quiet">${n.last_seen ? 'seen ' + Math.round(now - n.last_seen) + ' s ago' : 'never seen'}</span>`}
         ${s.phase !== 'idle' && inRound ? (got ? ' <span class="badge teal">update in</span>' : ' <span class="badge orange">training</span>') : ''}</td>
         <td class="num">${n.n ?? '—'}</td><td class="num">${n.labelled ?? '—'}</td><td class="num">${n.has_version != null ? 'v' + n.has_version : '—'}</td>
@@ -168,6 +202,8 @@ async function loadHistory() {
     const h = await api('/api/rounds');
     const all = [...h.simulated, ...h.live];
     shareHistory($('#hist'), all);
+    const lastR = all[all.length - 1];
+    if (lastR) { $('#k-f1').textContent = fmt(lastR.val_after); $('#k-f1-s').textContent = `after round ${lastR.round}${lastR.simulated ? ' (Kaggle simulation)' : ''}`; }
     $('#hist').querySelectorAll('tr').forEach((tr, i) => {
       if (!i) return;
       const n = parseInt(tr.cells[0].textContent);
