@@ -428,8 +428,9 @@ def fig_fl_contributions(fed):
     ax[2].axhline(0, color='k', lw=.5); ax[2].set_ylabel('validation macro-F1'); ax[2].set_title('Shapley value', fontsize=10)
     for a in ax:
         a.set_xlabel('round')
-    ax[0].legend(frameon=False, fontsize=8)
-    fig.tight_layout()
+    h, l = ax[0].get_legend_handles_labels()
+    fig.legend(h, l, frameon=False, fontsize=8, ncol=3, loc='lower center')
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     save(fig, 'fl_contributions.png')
 
 
@@ -447,8 +448,9 @@ def fig_noisy_client(fed):
     for ax, key, t in zip(axs, ['share', 'alignment', 'shapley'], ['Update share', 'Alignment (cosine)', 'Shapley value']):
         for node, c in zip([1, 2, 3], [CLIENT_COLORS[0], CLIENT_COLORS[1], OR]):
             ax.plot([r['round'] for r in N], [next(cc[key] for cc in r['clients'] if cc['node'] == node) for r in N],
-                    marker='o', color=c, label=f'Client {node}' + (' (noisy labels)' if node == 3 else ''))
+                    marker='o', color=c, label=f'Client {node}' + (' (sends noise)' if node == 3 else ''))
         ax.set_title(t, fontsize=10); ax.set_xlabel('round'); ax.axhline(0, color='k', lw=.5)
+        ax.set_xticks([1, 2, 3])
     axs[0].legend(frameon=False, fontsize=7.5)
     fig.tight_layout()
     save(fig, 'noisy_client.png')
@@ -464,8 +466,9 @@ def fig_personalisation(test_rows):
     for i, k in enumerate(keys):
         ax.text(i - w / 2, g[k] + .01, f'{g[k]:.3f}', ha='center', fontsize=8)
         ax.text(i + w / 2, p[k] + .01, f'{p[k]:.3f}', ha='center', fontsize=8)
-    ax.set_xticks(x, ['Client 1', 'Client 2', 'Client 3']); ax.set_ylabel("macro-F1, classes in the client's test set")
+    ax.set_xticks(x, ['Client 1', 'Client 2', 'Client 3']); ax.set_ylabel('macro-F1 (classes present)')
     ax.set_ylim(0, 1.15); ax.legend(frameon=False, fontsize=8, loc='upper center', ncol=2)
+    fig.tight_layout()
     save(fig, 'personalisation.png')
 
 
