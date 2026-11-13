@@ -6,3 +6,4 @@ data/
 *.log
 outputs.zip
 .DS_Store
+.cache/
