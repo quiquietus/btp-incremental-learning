@@ -52,7 +52,7 @@ FEATURE_NAMES = (
 N_FEATURES = len(FEATURE_NAMES)  # 46
 assert N_FEATURES == 46
 
-# Index map for the paper's 9-D ablation: 3 left-side angles, velocities, accelerations
+# Index map for the nine-feature ablation: 3 left-side angles, velocities, accelerations
 PAPER_ANGLES = ['l_elbow', 'l_shoulder', 'l_knee']
 
 # Mirror permutation for MediaPipe's 33 landmarks (left <-> right)
@@ -148,7 +148,7 @@ def frame_features(lm, aspect=1.0, fps=FPS, prev=None):
 
 
 def paper_features(feat46, fps=FPS):
-    """The original paper's 9-D vector from the 46-D features: three left-side
+    """The nine-feature ablation vector from the 46-D features: three left-side
     angles, their velocities and accelerations."""
     idx = [FEATURE_NAMES.index('ang_' + a) for a in PAPER_ANGLES]
     ang = feat46[:, idx]
